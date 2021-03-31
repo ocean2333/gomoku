@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 
@@ -18,7 +19,12 @@ var (
 	waiting []*websocket.Conn
 	mu      sync.RWMutex
 
-	//
+	//html
+	load  sync.Once
+	chess []byte
+	jq    []byte
+	js    []byte
+	rule  []byte
 )
 
 func handler(w http.ResponseWriter, r *http.Request) {
@@ -101,7 +107,43 @@ func makeMatch() {
 	}
 }
 
+func serveHtml() {
+	fs := http.FileServer(http.Dir("./js"))
+	http.Handle("/js/", http.StripPrefix("/js/", fs))
+	http.ListenAndServe("127.0.0.1:9998", nil)
+}
+
+func loadFile() {
+	var err error
+	chess, err = os.ReadFile("./html/chess.html")
+	if err != nil {
+		panic(err)
+	}
+	jq, err = os.ReadFile("./js/jquery-1.12.3.min.js")
+	if err != nil {
+		panic(err)
+	}
+	js, err = os.ReadFile("./js/json2.js")
+	if err != nil {
+		panic(err)
+	}
+	rule, err = os.ReadFile("./js/rule.js")
+	if err != nil {
+		panic(err)
+	}
+}
+
 func main() {
+	loadFile()
+	//go serveHtml()
 	go makeMatch()
-	http.ListenAndServe("127.0.0.1:9999", http.HandlerFunc(handler))
+	go func() {
+		fs := http.FileServer(http.Dir("./js"))
+		http.Handle("/js/", http.StripPrefix("/js/", fs))
+		http.Handle("/", http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+			rw.Write(chess)
+		}))
+		http.ListenAndServe(":9998", nil)
+	}()
+	http.ListenAndServe(":9999", http.HandlerFunc(handler))
 }

@@ -276,7 +276,7 @@ $(function(){
     
       //判断当前浏览器是否支持WebSocket
       if('WebSocket' in window){
-          websocket = new WebSocket("ws://127.0.0.1:9999");
+          websocket = new WebSocket("ws://server.zhaowenjun.com");
       }
       else{
           alert('Not support websocket');

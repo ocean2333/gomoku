@@ -5,4 +5,5 @@ type Result struct {
 	Message string `json:"message"`
 	Bout    bool   `json:"bout"`
 	Color   string `json:"color"`
+	Status  string `json:"status"`
 }

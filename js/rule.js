@@ -4,19 +4,24 @@ var websocket = null;
 var row = 15;
 var col = 15;
 var widthAndHeight = 30;//格子宽度高度
+var count = 0
+var last_pos = ""
 var WuZiQi = {
     isEnd:function(xy,chessmanColor){//判断是否结束游戏
         var id = parseInt(xy);
+        var msg = {};
+        msg.status = "end" 
         //竖的计算
         var num = 1;
         num = WuZiQi.shujia(num,id,chessmanColor);
         num = WuZiQi.shujian(num,id,chessmanColor);
         if(num>=5){
             if(chessmanColor==color){
-                confirm("游戏结束！你赢了！");
+                alert("游戏结束！你赢了！");
             }else{
-                confirm("游戏结束！你输了！");
+                alert("游戏结束！你输了！");
             }
+            websocket.send(JSON.stringify(msg));
             return ;
         }
         num = 1;
@@ -24,21 +29,23 @@ var WuZiQi = {
         num = WuZiQi.hengjian(num,id,chessmanColor);
         if(num>=5){
             if(chessmanColor==color){
-                confirm("游戏结束！你赢了！");
+                alert("游戏结束！你赢了！");
             }else{
-                confirm("游戏结束！你输了！");
+                alert("游戏结束！你输了！");
             }
+            websocket.send(JSON.stringify(msg));
             return ;
         }
-;        num = 1;
+        num = 1;
         num = WuZiQi.zuoxiejia(num,id,chessmanColor);
         num = WuZiQi.zuoxiejian(num,id,chessmanColor);
         if(num>=5){
             if(chessmanColor==color){
-                confirm("游戏结束！你赢了！");
+                alert("游戏结束！你赢了！");
             }else{
-                confirm("游戏结束！你输了！");
+                alert("游戏结束！你输了！");
             }
+            websocket.send(JSON.stringify(msg));
             return ;
         }
         num = 1;
@@ -46,10 +53,11 @@ var WuZiQi = {
         num = WuZiQi.youxiejian(num,id,chessmanColor);
         if(num>=5){
             if(chessmanColor==color){
-                confirm("游戏结束！你赢了！");
+                alert("游戏结束！你赢了！");
             }else{
-                confirm("游戏结束！你输了！");
+                alert("游戏结束！你输了！");
             }
+            websocket.send(JSON.stringify(msg));
             return ;
         }
     },youxiejia:function(num,id,color){
@@ -108,8 +116,7 @@ var WuZiQi = {
         }else{
             return num;
         }
-    },
-    hengjia:function(num,id,color){
+    },hengjia:function(num,id,color){
         var yu = id%row;
         id = id+1;
         if(id<(row*col)&&(id%row)>yu){
@@ -124,8 +131,7 @@ var WuZiQi = {
             return num;
         }
         
-    },
-    hengjian:function(num,id,color){
+    },hengjian:function(num,id,color){
         var yu = id%row;
         id = id-1;
         if(id>=0&(id%row)<yu){
@@ -139,8 +145,7 @@ var WuZiQi = {
         }else{
             return num;
         }
-    },
-    shujia:function(num,id,color){
+    },shujia:function(num,id,color){
         id = id+row;
         if(id<(row*col)){
             var flag = WuZiQi.checkColor(id,color);
@@ -153,8 +158,7 @@ var WuZiQi = {
         }else{
             return num;
         }
-    },
-    shujian:function(num,id,color){
+    },shujian:function(num,id,color){
         id = id-row;
         if(id>=0){
             var flag = WuZiQi.checkColor(id,color);
@@ -167,15 +171,13 @@ var WuZiQi = {
         }else{
             return num;
         }
-    },
-    checkColor:function(xy,color){
+    },checkColor:function(xy,color){
         if($("#"+xy).children("div").hasClass(color)){
             return true;
         }else {
             return false;
         }
-    },
-    playchess:function(e){
+    },playchess:function(e){
         if(bout&&color!=""){
             if($(e).children("div").length>0){
                 alert("这里已经有子了！请在其它地方落子！");
@@ -186,6 +188,7 @@ var WuZiQi = {
             result.color = color;
             result.message = "系统：您已落子，请等待对手落子！";
             result.bout = false;
+            result.status = "move"
             if(websocket!=null){
                 websocket.send(JSON.stringify(result));
             }else{
@@ -211,15 +214,21 @@ var WuZiQi = {
           if(message!=""){
               var result = {};
               result.message = message;
+              result.status = "talk"
               websocket.send(JSON.stringify(result));
               $("#message").val("");
           }else{
-              $("#messageContent").append("系统：请不要发送空信息!");
+            $("#messageContent").append("系统：请不要发送空信息!");
             $("#messageContent").append("\n");
             $("#messageContent").scrollTop($("#messageContent")[0].scrollHeight - $("#messageContent").height());
           }
-          
-      }
+    },
+    sendReady:function(){
+        var result = {}
+        result.status = "ready"
+        websocket.send(JSON.stringify(result));
+        $("#ready").attr({"disabled":"true"});
+    }
 };
 $(function(){
     //根据棋盘格子数得到棋盘大小
@@ -276,7 +285,7 @@ $(function(){
     
       //判断当前浏览器是否支持WebSocket
       if('WebSocket' in window){
-          websocket = new WebSocket("ws://server.zhaowenjun.com");
+          websocket = new WebSocket("ws://zhaowenjun.com:9999");
       }
       else{
           alert('Not support websocket');
@@ -294,39 +303,72 @@ $(function(){
         result.color = "";
         result.message = "";
         result.bout = false;
+        result.status = "conn"
         websocket.send(JSON.stringify(result));
       };
        
       //接收到消息的回调方法(包含了聊天，落子，开始游戏)
       websocket.onmessage = function(){
-          var result = JSON.parse(event.data);
-        if(result.message!=""){
-            $("#messageContent").append(result.message);
-            $("#messageContent").append("\n");
-            //将多行文本滚动总是在最下方
-            $("#messageContent").scrollTop($("#messageContent")[0].scrollHeight - $("#messageContent").height());
+        var result = JSON.parse(event.data);
+        console.log(result)
+        if(result.status=="close"){
+            alert("对手已跑路")
+            color = ""
+            bout = false
+            $("#ready").attr({"disabled":false});
         }
-        if(result.xy!=""&&result.color!=""){
+        if(result.status=="end" || result.status=="full_end"){
+            color = ""
+            bout = false
+            $("#ready").attr({"disabled":false});
+        }
+        if(result.status == "move" && result.xy!=""&&result.color != ""){
             $("#"+result.xy).html("<div class=\"chessman "+result.color+"\"></div>");
+            $("div").remove(".point");
+            $("#"+result.xy).append("<div class=\"point\" align=\"center\"></div>")
+            setTimeout(function(){WuZiQi.isEnd(result.xy,result.color)},50)
+            count++;
+            if(count>224){
+                var msg = {}
+                msg.status = "full_end"
+                websocket.send(JSON.stringify(msg))
+            }
             bout = result.bout;//落子后才改状态
-            WuZiQi.isEnd(result.xy,result.color);
-        }else if(result.xy==""&&result.bout){//没有坐标且bout为true，则为对局首次开始落子
+        }
+        if(result.xy==""&&result.bout){//没有坐标且bout为true，则为对局首次开始落子
             bout = result.bout;
         }
             
         if(result.xy==""&&result.color!=""){//没有坐标，但有颜色，则为首次赋予棋子颜色
             color = result.color;
+            count = 0;
+            for (let index = 0; index < 224; index++) {
+                $("#"+index).empty();
+            }
+        }
+        if(message != ""){
+            $("#messageContent").append(result.message);
+            $("#messageContent").append("\n");
+            //将多行文本滚动总是在最下方
+            $("#messageContent").scrollTop($("#messageContent")[0].scrollHeight - $("#messageContent").height());
         }
       };
        
       //连接关闭的回调方法
-      websocket.onclose = function(){
-
+      websocket.onclose = function(){	
+        
       };
        
       //监听窗口关闭事件，当窗口关闭时，主动去关闭websocket连接，防止连接还没断开就关闭窗口，server端会抛异常。
       window.onbeforeunload = function(){
-          websocket.close();
+        var result = {};
+        result.xy = "";
+        result.color = color;
+        result.message = "";
+        result.status = "close"
+        result.bout = false;
+        websocket.send(JSON.stringify(result));
+        websocket.close();
       };
        
        

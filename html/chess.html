@@ -13,6 +13,8 @@
                 /*background: #EAC000;*/
             }
             .chessman{
+                position: absolute;
+                z-index: 1;
                 border-radius: 15px;
                 width: 30px;
                 height: 30px;
@@ -26,11 +28,23 @@
             }
             .grid,.b_grid{
                 float: left;
+                position: relative;
             }
             .message{
                 width: 320px;
                 height: 100px;
                 margin: 0 auto;
+            }
+            .point{
+                position: absolute;
+                z-index: 2;
+                top: 12.5px;
+                left: 12.5px;
+                border-radius: 1px;
+                width: 5px;
+                height: 5px;
+                margin: 0 auto;
+                background-color: red;
             }
             #messageContent{
                 width: 320px;
@@ -46,6 +60,7 @@
         <div class="message">
             <textarea id="messageContent" disabled="disabled" readonly="readonly"></textarea>
             <div><input id="message"/> <button onclick="WuZiQi.sendMessage()">发送</button></div>
+            <div><button id="ready" onclick="WuZiQi.sendReady()">准备</button></div>
         </div>
     </body>
 </html>
